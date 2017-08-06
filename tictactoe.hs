@@ -1,6 +1,4 @@
-import           Data.Matrix
-import qualified Data.Vector as V
-
+import Data.List
 
 -- main = do
 --     putStr intro
@@ -19,17 +17,16 @@ instance Show Space where
 
 data Player = Human | Computer deriving (Eq, Show, Read)
 
-type Board = Matrix Space
+type Board = [[Space]]
 
 data Endgame = Draw | IWin | YouWin
 
 
-intro :: String
 intro = "\nI am TicTacToe9000. Welcome to my Tic-tac-Temple. Let's play.\n" ++
         "You go first. You're X; I'm O. Enter a number to mark a space.\n\n"
 
 newBoard :: Board
-newBoard = fromList 3 3 . map (Space Empty) $ [1..9]
+newBoard = (map . map) (Space Empty) [[1..3], [4..6], [7..9]]
 
 endgame :: Board -> Maybe Endgame
 endgame board
@@ -39,11 +36,28 @@ endgame board
     | otherwise                                    = Nothing
 
 getWinLines :: Board -> [[Mark]]
-getWinLines brd = ($ brd) `map` funlist
-    where funlist = (.) <$> toLists <$> [transpose, id]
+getWinLines b = (map . map) getMark spaceLines
+    where spaceLines = (diagonal b) : (diagonal . reverse $ b) : (transpose b) ++ b
 
--- move :: Board -> Player -> Int -> Board
--- move board player ind =
+diagonal :: [[a]] -> [a]
+diagonal [] = []
+diagonal [[]] = []
+diagonal ((x:_):rs) = x : (diagonal $ map tail rs)
+
+
+makeMark :: Mark -> Space -> Maybe Space
+makeMark new (Space Empty n) = Just (Space new n)
+makeMark _ (Space X _) = Nothing
+makeMark _ (Space O _) = Nothing
+
+move :: Board -> Player -> Int -> Maybe Board
+move b Human i = 
+move b Computer i = 
+    where
+        inds = (map . map) getInd newBoard
+        row = findIndex (elem i) inds
+        col =  row >>= (\r -> findIndex ( == 1) $ inds !! r)
+
 
 
 
