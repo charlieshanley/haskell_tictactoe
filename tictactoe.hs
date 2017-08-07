@@ -18,7 +18,6 @@ data Player = Human | Computer deriving (Eq, Show, Read)
 type Board = [[Space]]
 data Endgame = Draw | IWin | YouWin deriving (Eq, Show, Read)
 
-
 -------------------------------------------------------------------------------
 -- Some constants
 intro = "\nI am TicTacToe9000. Welcome to my Tic-tac-Temple. Let's play.\n" ++
@@ -61,13 +60,11 @@ maybeChangeElement f orig r c = place beforeRs afterRs <$> newR
         newV = f oldV
         place before after = (before ++) . (++ after) . (:[])
 
-
 markSpace :: Mark -> Maybe Int -> Maybe Int -> Board -> Maybe Board
 markSpace m row col b = do
     r <- row
     c <- col
     maybeChangeElement (makeMark m) b r c
-
 
 move :: Mark -> Int -> Board -> Maybe Board
 move m i b = markSpace m row col b
@@ -76,16 +73,29 @@ move m i b = markSpace m row col b
         row = findIndex (elem i) inds
         col =  row >>= findIndex (== i) . (!!) inds
 
-
 -------------------------------------------------------------------------------
 -- Decide which move to make
--- emptyInds :: Board -> [Int]
+emptyInds :: Board -> [Int]
+emptyInds = map getInd . filter ((==Empty) . getMark) . concat
+
+allMoves :: Mark -> Board -> [Maybe Board]
+allMoves m b =  map (\i -> move m i b) $ emptyInds b
+
+treeSeed :: Maybe Board -> (Maybe Board, [Maybe Board])
+-- treeSeed mb = mb >>= (\b -> (Just b, allMoves X b))
+
+treeSeed mb = do
+    b <- mb
+    (Just b, allMoves X b)
+
+lookAhead :: Board -> Tree (Maybe Board)
+lookAhead brd = unfoldTree treeSeed (Just brd)
 
 
+-- type GameState = Tree (Int, Board)
 
-showBoard :: Board -> String
-showBoard = unlines . map unwords . (map . map) show
 
--- play :: Board -> Board
+-- showBoard :: Board -> String
+-- showBoard = unlines . map unwords . (map . map) show
 
--- lookAhead :: Board -> Tree Board
+-- -- play :: Board -> Board
