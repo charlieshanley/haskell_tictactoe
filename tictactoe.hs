@@ -6,32 +6,28 @@ import Data.Tree
 --     putStr intro
 --     play newBoard
 
-
+-------------------------------------------------------------------------------
 -- Data types to represent our scenario
 data Mark = X | O | Empty deriving (Eq, Show, Read)
-
 data Space = Space { getMark :: Mark, getInd :: Int }
-
 instance Show Space where
     show (Space X _)     = "X"
     show (Space O _)     = "O"
     show (Space Empty n) = show n
-
 data Player = Human | Computer deriving (Eq, Show, Read)
-
 type Board = [[Space]]
+data Endgame = Draw | IWin | YouWin deriving (Eq, Show, Read)
 
-data Endgame = Draw | IWin | YouWin
 
-
--- Constants to get us started
+-------------------------------------------------------------------------------
+-- Some constants
 intro = "\nI am TicTacToe9000. Welcome to my Tic-tac-Temple. Let's play.\n" ++
         "You go first. You're X; I'm O. Enter a number to mark a space.\n\n"
 
 newBoard :: Board
 newBoard = (map . map) (Space Empty) [[1..3], [4..6], [7..9]]
 
-
+-------------------------------------------------------------------------------
 -- Test for endgame
 endgame :: Board -> Maybe Endgame
 endgame b
@@ -49,7 +45,7 @@ diagonal [] = []
 diagonal [[]] = []
 diagonal ((x:_):rs) = x : (diagonal $ map tail rs)
 
-
+-------------------------------------------------------------------------------
 -- Make moves on the board
 makeMark :: Mark -> Space -> Maybe Space
 makeMark new (Space Empty n) = Just (Space new n)
@@ -57,12 +53,13 @@ makeMark _ (Space X _) = Nothing
 makeMark _ (Space O _) = Nothing
 
 maybeChangeElement :: (a -> Maybe a) -> [[a]] -> Int -> Int -> Maybe [[a]]
-maybeChangeElement f orig r c = (beforeRs ++) . (++ afterRs) . (:[]) <$> newR
+maybeChangeElement f orig r c = place beforeRs afterRs <$> newR
     where
         (beforeRs, (oldR:afterRs)) = splitAt r orig
         (beforeVs, (oldV:afterVs)) = splitAt c oldR
-        newR = (beforeVs ++) . (++ afterVs) . (:[]) <$> newV
+        newR = place beforeVs afterVs <$> newV
         newV = f oldV
+        place before after = (before ++) . (++ after) . (:[])
 
 
 markSpace :: Mark -> Maybe Int -> Maybe Int -> Board -> Maybe Board
@@ -72,18 +69,22 @@ markSpace m row col b = do
     maybeChangeElement (makeMark m) b r c
 
 
-move :: Board -> Mark -> Int -> Maybe Board
-move b m i = markSpace m row col b
+move :: Mark -> Int -> Board -> Maybe Board
+move m i b = markSpace m row col b
     where
         inds = (map . map) getInd b
         row = findIndex (elem i) inds
-        col =  row >>= (findIndex (== 1) . (!!) inds)
+        col =  row >>= findIndex (== i) . (!!) inds
 
 
-
+-------------------------------------------------------------------------------
 -- Decide which move to make
-emptyInds :: Board -> [Int]
+-- emptyInds :: Board -> [Int]
 
+
+
+showBoard :: Board -> String
+showBoard = unlines . map unwords . (map . map) show
 
 -- play :: Board -> Board
 
