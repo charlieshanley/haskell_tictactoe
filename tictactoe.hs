@@ -79,18 +79,13 @@ emptyInds :: Board -> [Int]
 emptyInds = map getInd . filter ((==Empty) . getMark) . concat
 
 allMoves :: Mark -> Board -> [Maybe Board]
-allMoves m b =  map (\i -> move m i b) $ emptyInds b
+allMoves m b =  map moveI legalMoves
+    where legalMoves = emptyInds b
+          moveI = \i -> move m i b
 
-treeSeed :: Maybe Board -> (Maybe Board, [Maybe Board])
--- treeSeed mb = mb >>= (\b -> (Just b, allMoves X b))
-
-treeSeed mb = do
-    b <- mb
-    (Just b, allMoves X b)
-
-lookAhead :: Board -> Tree (Maybe Board)
-lookAhead brd = unfoldTree treeSeed (Just brd)
-
+-- lookAhead :: Board -> Tree (Maybe Board)
+-- lookAhead brd = Tree brd ()
+--     |
 
 -- type GameState = Tree (Int, Board)
 
