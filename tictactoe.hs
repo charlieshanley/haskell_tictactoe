@@ -40,9 +40,8 @@ getWinLines b = (map . map) getMark spaceLines
     where spaceLines = (diagonal b) : (diagonal . reverse $ b) : (transpose b) ++ b
 
 diagonal :: [[a]] -> [a]
-diagonal [] = []
-diagonal [[]] = []
 diagonal ((x:_):rs) = x : (diagonal $ map tail rs)
+diagonal _          = []
 
 -------------------------------------------------------------------------------
 -- Make moves on the board
@@ -53,12 +52,11 @@ makeMark _ (Space O _) = Nothing
 
 maybeChangeElement :: (a -> Maybe a) -> [[a]] -> Int -> Int -> Maybe [[a]]
 maybeChangeElement f orig r c = place beforeRs afterRs <$> newR
-    where
-        (beforeRs, (oldR:afterRs)) = splitAt r orig
-        (beforeVs, (oldV:afterVs)) = splitAt c oldR
-        newR = place beforeVs afterVs <$> newV
-        newV = f oldV
-        place before after = (before ++) . (++ after) . (:[])
+    where (beforeRs, (oldR:afterRs)) = splitAt r orig
+          (beforeVs, (oldV:afterVs)) = splitAt c oldR
+          newR = place beforeVs afterVs <$> newV
+          newV = f oldV
+          place before after = (before ++) . (++ after) . (:[])
 
 markSpace :: Mark -> Maybe Int -> Maybe Int -> Board -> Maybe Board
 markSpace m row col b = do
@@ -68,20 +66,22 @@ markSpace m row col b = do
 
 move :: Mark -> Int -> Board -> Maybe Board
 move m i b = markSpace m row col b
-    where
-        inds = (map . map) getInd b
-        row = findIndex (elem i) inds
-        col =  row >>= findIndex (== i) . (!!) inds
+    where inds = (map . map) getInd b
+          row = findIndex (elem i) inds
+          col =  row >>= findIndex (== i) . (!!) inds
+
+unsafeMove :: Mark -> Int -> Board -> Board
+unsafeMove m i b = fromJust $ move m i b
 
 -------------------------------------------------------------------------------
 -- Decide which move to make
 emptyInds :: Board -> [Int]
 emptyInds = map getInd . filter ((==Empty) . getMark) . concat
 
-allMoves :: Mark -> Board -> [Maybe Board]
-allMoves m b =  map moveI legalMoves
+allMoves :: Mark -> Board -> [Board]
+allMoves m b = moveI `map` legalMoves
     where legalMoves = emptyInds b
-          moveI = \i -> move m i b
+          moveI = \i -> unsafeMove m i b
 
 -- lookAhead :: Board -> Tree (Maybe Board)
 -- lookAhead brd = Tree brd ()
