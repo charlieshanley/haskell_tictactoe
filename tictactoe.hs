@@ -76,4 +76,4 @@ move m i b = markSpace m row col b
           col =  row >>= elemIndex i . (!!) inds
 
 unsafeMove :: Mark -> Int -> Board -> Board
-unsafeMove m i b = fromJust $ move m i b
+unsafeMove m i = fromJust . move m i
