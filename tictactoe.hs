@@ -11,6 +11,7 @@ module Tictactoe
 
 import Data.List
 import Data.Maybe
+import GHC.Exts (groupWith)
 
 -------------------------------------------------------------------------------
 -- Data types to represent our scenario
@@ -48,32 +49,18 @@ diagonal _          = []
 -- Make moves on the board
 makeMark :: Mark -> Space -> Maybe Space
 makeMark new (Space Empty n) = Just (Space new n)
-makeMark _ (Space X _) = Nothing
-makeMark _ (Space O _) = Nothing
+makeMark _   _               = Nothing
 
--- Can we change Space to association list of Marks, so that we can concat
--- the board, lookup element, change it, and unconcat? Then we wouldn't have
--- to bother with this complicated stuff.
+sqUnconcat :: [Space] -> Board
+sqUnconcat xs = groupWith ((`div` dim) . (subtract 1) . getInd) xs
+    where dim = ceiling . sqrt . fromIntegral . length $ xs
 
-maybeChangeElement :: (a -> Maybe a) -> [[a]] -> Int -> Int -> Maybe [[a]]
-maybeChangeElement f orig r c = place beforeRs afterRs <$> newR
-    where (beforeRs, oldR:afterRs) = splitAt r orig
-          (beforeVs, oldV:afterVs) = splitAt c oldR
-          newR = place beforeVs afterVs <$> newV
-          newV = f oldV
-          place before after = (before ++) . (++ after) . (:[])
-
-markSpace :: Mark -> Maybe Int -> Maybe Int -> Board -> Maybe Board
-markSpace m row col b = do
-    r <- row
-    c <- col
-    maybeChangeElement (makeMark m) b r c
+maybeModifyEl :: (a -> Maybe a) -> Int -> [a] -> Maybe [a]
+maybeModifyEl f i as = (xs ++) . (:ys) <$> f y
+    where (xs, y:ys) = splitAt (i - 1) as
 
 move :: Mark -> Int -> Board -> Maybe Board
-move m i b = markSpace m row col b
-    where inds = (map . map) getInd b
-          row = findIndex (elem i) inds
-          col =  row >>= elemIndex i . (!!) inds
+move m i b = sqUnconcat <$> maybeModifyEl (makeMark m) i (concat b)
 
 unsafeMove :: Mark -> Int -> Board -> Board
 unsafeMove m i = fromJust . move m i
