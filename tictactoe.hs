@@ -13,8 +13,7 @@ import Data.List
 import Data.Maybe
 import GHC.Exts (groupWith)
 
--------------------------------------------------------------------------------
--- Data types to represent our scenario
+
 data Mark = X | O | Empty deriving (Eq, Show, Read)
 data Space = Space { getMark :: Mark, getInd :: Int }
 instance Show Space where
@@ -30,6 +29,7 @@ newBoard = (map . map) (Space Empty) [[1..3], [4..6], [7..9]]
 
 -------------------------------------------------------------------------------
 -- Test for endgame
+
 endgame :: Board -> Maybe Endgame
 endgame b
     | elem [O, O, O] . getWinLines $ b         = Just OWins
@@ -47,20 +47,21 @@ diagonal _          = []
 
 -------------------------------------------------------------------------------
 -- Make moves on the board
-makeMark :: Mark -> Space -> Maybe Space
-makeMark new (Space Empty n) = Just (Space new n)
-makeMark _   _               = Nothing
-
-sqUnconcat :: [Space] -> Board
-sqUnconcat xs = groupWith ((`div` dim) . (subtract 1) . getInd) xs
-    where dim = ceiling . sqrt . fromIntegral . length $ xs
-
-maybeModifyEl :: (a -> Maybe a) -> Int -> [a] -> Maybe [a]
-maybeModifyEl f i as = (xs ++) . (:ys) <$> f y
-    where (xs, y:ys) = splitAt (i - 1) as
 
 move :: Mark -> Int -> Board -> Maybe Board
 move m i b = sqUnconcat <$> maybeModifyEl (makeMark m) i (concat b)
 
 unsafeMove :: Mark -> Int -> Board -> Board
 unsafeMove m i = fromJust . move m i
+
+maybeModifyEl :: (a -> Maybe a) -> Int -> [a] -> Maybe [a]
+maybeModifyEl f i as = (xs ++) . (:ys) <$> f y
+    where (xs, y:ys) = splitAt (i - 1) as
+
+sqUnconcat :: [Space] -> Board
+sqUnconcat xs = groupWith ((`div` dim) . (subtract 1) . getInd) xs
+    where dim = ceiling . sqrt . fromIntegral . length $ xs
+
+makeMark :: Mark -> Space -> Maybe Space
+makeMark new (Space Empty n) = Just (Space new n)
+makeMark _   _               = Nothing
