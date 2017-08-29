@@ -3,7 +3,7 @@ module Tictactoe
     Mark(..),
     Space(..),
     Board,
-    Endgame,
+    Endgame(..),
     newBoard,
     move,
     unsafeMove,
@@ -11,7 +11,7 @@ module Tictactoe
     ) where
 
 import Data.List
-import Data.Maybe
+import Data.Maybe (fromJust)
 import GHC.Exts (groupWith)
 
 
