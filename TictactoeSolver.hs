@@ -26,17 +26,39 @@ emptyInds = map getInd . filter ((==Empty) . getMark) . concat
 -------------------------------------------------------------------------------
 -- Score board states and select a good move
 
-prognosis :: Rose Board -> Rose Double
-prognosis (Rose x ys) = undefined
+pickMove :: Rose Board -> Int
+pickMove (Rose b0 rbs)= undefined
+    where prognoses = map (negamax . fmap (score . endgame)) rbs
 
-maximin :: (Num a, Ord a) => Rose a -> a
-maximin (Rose x []) = x
-maximin (Rose x ys) = maximum $ map (negate . maximin) ys
+
+-- Outermost Rose is a move that the comp can take; next are those its opponent can take
+negamax :: (Num c, Ord c) => Rose c -> c
+negamax (Rose n []) = n
+negamax (Rose n rs) = minimum . map (negate . negamax) $ rs
+
 
 score :: Maybe Endgame -> Int
 score (Just XWins) = negate 1
 score (Just OWins) = 1
 score _            = 0
+
+
+
+-------------------------------------------------------------------------------
+-- testing
+
+draw = (return newBoard) >>=
+    move X 1 >>= move O 5 >>= move X 3 >>= move O 2 >>= move X 8
+iwin = (return newBoard) >>=
+    move X 1 >>= move O 7 >>= move X 4 >>= move O 9 >>= move X 2
+youwin = (return newBoard) >>=
+    move X 1 >>= move O 4 >>= move X 9 >>= move O 8 >>= move X 3
+
+
+testTree :: Board -> Int
+testTree = negamax . fmap (score . endgame) . lookAhead O
+
+
 
 -- showBoard :: Board -> String
 -- showBoard = unlines . map unwords . (map . map) show
