@@ -2,6 +2,7 @@ module TictactoeSolver (decide) where
 
 import Tictactoe
 import Data.List
+import Data.Maybe (fromJust)
 
 
 data Rose a = Rose a [Rose a] deriving (Show, Eq)
@@ -19,8 +20,9 @@ decide = pickMove . lookAhead O
 -- Generate tree of possible board states
 
 lookAhead :: Mark -> Board -> Rose Board
-lookAhead m b = Rose b (nextTurn `map` allMoves m b)
-    where nextTurn = lookAhead (succ m)
+lookAhead m b
+    | endgame b /= Nothing = Rose b []
+    | otherwise            = Rose b $ lookAhead (succ m) `map` allMoves m b
 
 
 allMoves :: Mark -> Board -> [Board]
@@ -37,9 +39,9 @@ emptyInds = map getInd . filter ((==Empty) . getMark) . concat
 
 pickMove :: Rose Board -> Maybe Int
 pickMove (Rose b0 rbs)= unlist $ b1 `boardDiff` b0
-    where prognosis   = negamax . fmap (score . endgame)
-          best        = maximum . map prognosis $ rbs
-          Just (Rose b1 _) = find ((==best) . prognosis) rbs
+    where assess = minimax . fmap (score . endgame)
+          best   = maximum . map assess $ rbs
+          Just (Rose b1 _) = find ((==best) . assess) rbs
 
 
 boardDiff :: Board -> Board -> [Int]
@@ -50,11 +52,18 @@ unlist :: [a] -> Maybe a
 unlist [x] = Just x
 unlist _   = Nothing
 
-
 -- Outermost Rose is a move that the comp can take; next are those its opponent can take
+
+maximin (Rose n []) = n
+maximin (Rose _ rs) = maximum . map minimax $ rs
+
+minimax (Rose n []) = n
+minimax (Rose _ rs) = minimum . map maximin $ rs
+
+-- Doesn't work. Unsure why.
 negamax :: (Num c, Ord c) => Rose c -> c
 negamax (Rose n []) = n
-negamax (Rose _ rs) = minimum . map (negate . negamax) $ rs
+negamax (Rose _ rs) = maximum . map (negate . negamax) $ rs
 
 
 score :: Maybe Endgame -> Int
@@ -77,3 +86,8 @@ youwin = (return newBoard) >>=
 
 testTree :: Board -> Int
 testTree = negamax . fmap (score . endgame) . lookAhead O
+
+testTree' = maximin . fmap (score . endgame) . lookAhead O
+
+showB :: Maybe Board -> IO ()
+showB = putStr . unlines . map unwords . (map . map) show . fromJust
