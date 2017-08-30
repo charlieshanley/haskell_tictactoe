@@ -1,10 +1,18 @@
+module TictactoeSolver (decide) where
+
 import Tictactoe
+import Data.List
 
 
 data Rose a = Rose a [Rose a] deriving (Show, Eq)
 
 instance Functor Rose where
     f `fmap` (Rose x ys) = Rose (f x) ((map . fmap) f ys)
+
+
+-- The main thing
+decide :: Board -> Maybe Int
+decide = pickMove . lookAhead O
 
 
 -------------------------------------------------------------------------------
@@ -16,8 +24,9 @@ lookAhead m b = Rose b (nextTurn `map` allMoves m b)
 
 
 allMoves :: Mark -> Board -> [Board]
-allMoves m b = moveI `map` (emptyInds b)
-    where moveI = \i -> unsafeMove m i b
+allMoves m b = moveThere `map` legalMoves
+    where moveThere = \i -> unsafeMove m i b
+          legalMoves = emptyInds b
 
 emptyInds :: Board -> [Int]
 emptyInds = map getInd . filter ((==Empty) . getMark) . concat
@@ -26,15 +35,26 @@ emptyInds = map getInd . filter ((==Empty) . getMark) . concat
 -------------------------------------------------------------------------------
 -- Score board states and select a good move
 
-pickMove :: Rose Board -> Int
-pickMove (Rose b0 rbs)= undefined
-    where prognoses = map (negamax . fmap (score . endgame)) rbs
+pickMove :: Rose Board -> Maybe Int
+pickMove (Rose b0 rbs)= unlist $ b1 `boardDiff` b0
+    where prognosis   = negamax . fmap (score . endgame)
+          best        = maximum . map prognosis $ rbs
+          Just (Rose b1 _) = find ((==best) . prognosis) rbs
+
+
+boardDiff :: Board -> Board -> [Int]
+boardDiff b1 b0 = f b1 \\ f b0
+    where f = map getInd . filter ((/=Empty) . getMark) . concat
+
+unlist :: [a] -> Maybe a
+unlist [x] = Just x
+unlist _   = Nothing
 
 
 -- Outermost Rose is a move that the comp can take; next are those its opponent can take
 negamax :: (Num c, Ord c) => Rose c -> c
 negamax (Rose n []) = n
-negamax (Rose n rs) = minimum . map (negate . negamax) $ rs
+negamax (Rose _ rs) = minimum . map (negate . negamax) $ rs
 
 
 score :: Maybe Endgame -> Int
@@ -57,24 +77,3 @@ youwin = (return newBoard) >>=
 
 testTree :: Board -> Int
 testTree = negamax . fmap (score . endgame) . lookAhead O
-
-
-
--- showBoard :: Board -> String
--- showBoard = unlines . map unwords . (map . map) show
-
--- -- play :: Board -> Board
-
-
-
--- intro = "\nI am TicTacToe9000. Welcome to my Tic-tac-Temple. Let's play.\n" ++
---         "You go first. You're X; I'm O. Enter a number to mark a space.\n\n"
-
-
-
-
-
--- Oh, compiled it's plenty fast. It's only too slow interpreted in GHCi
--- main = putStrLn . show $ lookAhead O <$> almost
-
--- almost = (return newBoard) >>= move X 1
