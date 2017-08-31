@@ -8,26 +8,27 @@ import Data.Maybe (fromJust)
 data Rose a = Rose a [Rose a] deriving (Show, Eq)
 
 instance Functor Rose where
-    f `fmap` (Rose x ys) = Rose (f x) ((map . fmap) f ys)
+    f `fmap` (Rose x ys) = Rose (f x) $ (map . fmap) f ys
 
+data Assessment = Assessment {gameState :: GameState, merit :: Int}
 
 -- The main thing
-decide :: Board -> Maybe Int
-decide = pickMove . lookAhead O
+decide :: GameState -> Maybe Int
+decide = pickMove . lookAhead
 
 
 -------------------------------------------------------------------------------
 -- Generate tree of possible board states
 
-lookAhead :: Mark -> Board -> Rose Board
-lookAhead m b
-    | endgame b /= Nothing = Rose b []
-    | otherwise            = Rose b $ lookAhead (succ m) `map` allMoves m b
+lookAhead :: GameState -> Rose GameState
+lookAhead gs@(GameState _ _ b)
+    | endgame b == Nothing = Rose gs $ lookAhead `map` allMoves gs
+    | otherwise            = Rose gs []
 
 
-allMoves :: Mark -> Board -> [Board]
-allMoves m b = moveThere `map` legalMoves
-    where moveThere = \i -> unsafeMove m i b
+allMoves :: GameState -> [GameState]
+allMoves gs@(GameState _ m b) = moveThere `map` legalMoves
+    where moveThere = \i -> unsafeMove i gs
           legalMoves = emptyInds b
 
 emptyInds :: Board -> [Int]
@@ -37,57 +38,44 @@ emptyInds = map getInd . filter ((==Empty) . getMark) . concat
 -------------------------------------------------------------------------------
 -- Score board states and select a good move
 
-pickMove :: Rose Board -> Maybe Int
-pickMove (Rose b0 rbs)= unlist $ b1 `boardDiff` b0
-    where assess = minimax . fmap (score . endgame)
-          best   = maximum . map assess $ rbs
-          Just (Rose b1 _) = find ((==best) . assess) rbs
+pickMove :: Rose GameState -> Maybe Int
+pickMove (Rose _ []) = Nothing
+pickMove r           = lastMove <$> nextGameState
+    where (Rose current candidates) = maximin r
+          nextGameState = gameState . unrose <$> find isBest candidates
+          isBest = (==(merit current)) . merit . unrose
 
+maximin :: Rose GameState -> Rose Assessment
+maximin (Rose gs []) = Rose (Assessment gs (scoreGS gs)) []
+maximin (Rose gs rs) = Rose (Assessment gs (review children)) children
+    where children = map maximin rs
+          review = superlative . map (merit . unrose)
+          superlative = if whoseTurn gs == O then maximum else minimum
 
-boardDiff :: Board -> Board -> [Int]
-boardDiff b1 b0 = f b1 \\ f b0
-    where f = map getInd . filter ((/=Empty) . getMark) . concat
-
-unlist :: [a] -> Maybe a
-unlist [x] = Just x
-unlist _   = Nothing
-
--- Outermost Rose is a move that the comp can take; next are those its opponent can take
-
-maximin (Rose n []) = n
-maximin (Rose _ rs) = maximum . map minimax $ rs
-
-minimax (Rose n []) = n
-minimax (Rose _ rs) = minimum . map maximin $ rs
-
--- Doesn't work. Unsure why.
-negamax :: (Num c, Ord c) => Rose c -> c
-negamax (Rose n []) = n
-negamax (Rose _ rs) = maximum . map (negate . negamax) $ rs
-
+scoreGS :: GameState -> Int
+scoreGS = score . endgame . board
 
 score :: Maybe Endgame -> Int
 score (Just XWins) = negate 1
 score (Just OWins) = 1
 score _            = 0
 
+unrose :: Rose a -> a
+unrose (Rose x _) = x
 
+
+
+showGameTree :: Rose GameState -> String
+showGameTree rg = show' 0 rg
+    where show' i (Rose g rs) = intercalate "\n" $ showGame i g : map (show' (i+2)) rs
+
+showGame :: Int -> GameState -> String
+showGame i = unlines . map (indent . unwords) . (map . map) show . board
+    where indent s = replicate i ' ' ++ s
 
 -------------------------------------------------------------------------------
 -- testing
 
-draw = (return newBoard) >>=
-    move X 1 >>= move O 5 >>= move X 3 >>= move O 2 >>= move X 8
-iwin = (return newBoard) >>=
-    move X 1 >>= move O 7 >>= move X 4 >>= move O 9 >>= move X 2
-youwin = (return newBoard) >>=
-    move X 1 >>= move O 4 >>= move X 9 >>= move O 8 >>= move X 3
-
-
-testTree :: Board -> Int
-testTree = negamax . fmap (score . endgame) . lookAhead O
-
-testTree' = maximin . fmap (score . endgame) . lookAhead O
-
-showB :: Maybe Board -> IO ()
-showB = putStr . unlines . map unwords . (map . map) show . fromJust
+draw = (return newGame) >>= move 1 >>= move 5 >>= move 3 >>= move 2 >>= move 8
+iwin = (return newGame) >>= move 1 >>= move 7 >>= move 4 >>= move 9 >>= move 2
+youwin = (return newGame) >>= move 1 >>= move 4 >>= move 9 >>= move 8 >>= move 3

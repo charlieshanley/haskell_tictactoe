@@ -3,8 +3,9 @@ module Tictactoe
     Mark(..),
     Space(..),
     Board,
+    GameState(..),
     Endgame(..),
-    newBoard,
+    newGame,
     move,
     unsafeMove,
     endgame
@@ -38,9 +39,17 @@ type Board = [[Space]]
 
 data Endgame = Draw | OWins | XWins deriving (Eq, Show, Read)
 
+data GameState = GameState
+    { lastMove :: Int
+    , whoseTurn :: Mark
+    , board :: Board }
+
 
 newBoard :: Board
 newBoard = (map . map) (Space Empty) [[1..3], [4..6], [7..9]]
+
+newGame :: GameState
+newGame = GameState 0 X newBoard
 
 -------------------------------------------------------------------------------
 -- Test for endgame
@@ -65,11 +74,13 @@ diagonal _          = []
 -------------------------------------------------------------------------------
 -- Make moves on the board
 
-move :: Mark -> Int -> Board -> Maybe Board
-move m i b = sqUnconcat <$> maybeModifyEl (makeMark m) i (concat b)
+move :: Int -> GameState -> Maybe GameState
+move i (GameState _ m b0) = nextBoard >>= \b1 -> return $ GameState i nextTurn b1
+    where nextBoard = sqUnconcat <$> maybeModifyEl (makeMark m) i (concat b0)
+          nextTurn = succ m
 
-unsafeMove :: Mark -> Int -> Board -> Board
-unsafeMove m i = fromJust . move m i
+unsafeMove :: Int -> GameState -> GameState
+unsafeMove i = fromJust . move i
 
 maybeModifyEl :: (a -> Maybe a) -> Int -> [a] -> Maybe [a]
 maybeModifyEl f i as = (xs ++) . (:ys) <$> f y
