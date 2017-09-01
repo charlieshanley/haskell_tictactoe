@@ -1,12 +1,12 @@
 module TictactoeSolver
     ( decide
     , maximin
+    , hastyMaximin
     ) where
 
+import Data.Maybe(isNothing)
 import Tictactoe
 import Data.List
-import Data.Maybe (fromJust)
-
 
 data Rose a = Rose a [Rose a] deriving (Show, Eq)
 
@@ -19,26 +19,25 @@ data Assessment = Assessment {gameState :: GameState, merit :: Float}
 decide :: (Rose GameState -> Rose Assessment) -> GameState -> Maybe Int
 decide evaluator = pickMove . evaluator . lookAhead
 
-
 -------------------------------------------------------------------------------
 -- Generate tree of possible board states
 
 lookAhead :: GameState -> Rose GameState
 lookAhead gs@(GameState _ _ b)
-    | endgame b == Nothing = Rose gs $ lookAhead `map` allMoves gs
+    | isNothing(endgame b) = Rose gs $ lookAhead `map` allMoves gs
     | otherwise            = Rose gs []
 
 
 allMoves :: GameState -> [GameState]
-allMoves gs@(GameState _ m b) = moveThere `map` legalMoves
-    where moveThere = \i -> unsafeMove i gs
+allMoves gs@(GameState _ _ b) = moveThere `map` legalMoves
+    where moveThere = (`unsafeMove` gs)
           legalMoves = emptyInds b
 
 emptyInds :: Board -> [Int]
 emptyInds = map getInd . filter ((==Empty) . getMark) . concat
 
 -------------------------------------------------------------------------------
--- Evaluate the tree of GameStates
+-- Algorithms to evaluate the tree of GameStates
 
 -- Assumes perfect oponent; does not care how long game takes.
 maximin :: Rose GameState -> Rose Assessment
@@ -74,8 +73,8 @@ unrose (Rose x _) = x
 
 pickMove :: Rose Assessment -> Maybe Int
 pickMove (Rose _ []) = Nothing
-pickMove (Rose current potential) = lastMove <$> chosen
-    where candidates = map unrose potential
+pickMove (Rose _ potential) = lastMove <$> chosen
+    where candidates = unrose `map` potential
           bestMerit = maximum . map merit $ candidates
           chosen = gameState <$> find ((bestMerit==) . merit) candidates
 
@@ -83,16 +82,16 @@ pickMove (Rose current potential) = lastMove <$> chosen
 -- development utilities
 
 showTree :: (Int -> a -> String) -> Rose a -> String
-showTree showFun r = show' 0 r
-    where show' i (Rose x xs) = intercalate("\n") $ showFun i x : map (show' (i+4)) xs
+showTree showFun = show' 0
+    where show' i (Rose x xs) = intercalate "\n" $ showFun i x : map (show' (i+4)) xs
 
 showIndent :: (Show s) => Int -> s -> String
 showIndent indent = (replicate indent ' ' ++) . show
 
 showGame :: Int -> GameState -> String
-showGame i = unlines . map (indent . unwords) . (map . map) show . board
+showGame i = unlines . map (indent . unwords . map show) . board
     where indent s = replicate i ' ' ++ s
 
-draw = (return newGame) >>= move 1 >>= move 5 >>= move 3 >>= move 2 >>= move 8
-iwin = (return newGame) >>= move 1 >>= move 7 >>= move 4 >>= move 9 >>= move 2
-youwin = (return newGame) >>= move 1 >>= move 4 >>= move 9 >>= move 8 >>= move 3
+draw = return newGame >>= move 1 >>= move 5 >>= move 3 >>= move 2 >>= move 8
+iwin = return newGame >>= move 1 >>= move 7 >>= move 4 >>= move 9 >>= move 2
+youwin = return newGame >>= move 1 >>= move 4 >>= move 9 >>= move 8 >>= move 3
