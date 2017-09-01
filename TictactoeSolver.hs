@@ -1,4 +1,7 @@
-module TictactoeSolver (decide) where
+module TictactoeSolver
+    ( decide
+    , maximin
+    ) where
 
 import Tictactoe
 import Data.List
@@ -13,8 +16,8 @@ instance Functor Rose where
 data Assessment = Assessment {gameState :: GameState, merit :: Int}
 
 -- The main thing
-decide :: GameState -> Maybe Int
-decide = pickMove . lookAhead
+decide :: (Rose GameState -> Rose Assessment) -> GameState -> Maybe Int
+decide evaluator = pickMove . evaluator . lookAhead
 
 
 -------------------------------------------------------------------------------
@@ -38,12 +41,13 @@ emptyInds = map getInd . filter ((==Empty) . getMark) . concat
 -------------------------------------------------------------------------------
 -- Score board states and select a good move
 
-pickMove :: Rose GameState -> Maybe Int
+-- pickMove = undefined
+pickMove :: Rose Assessment -> Maybe Int
 pickMove (Rose _ []) = Nothing
-pickMove r           = lastMove <$> nextGameState
-    where (Rose current candidates) = maximin r
-          nextGameState = gameState . unrose <$> find isBest candidates
-          isBest = (==(merit current)) . merit . unrose
+pickMove (Rose current potential) = lastMove <$> chosen
+    where candidates = map unrose potential
+          bestMerit = maximum . map merit $ candidates
+          chosen = gameState <$> find ((bestMerit==) . merit) candidates
 
 maximin :: Rose GameState -> Rose Assessment
 maximin (Rose gs []) = Rose (Assessment gs (scoreGS gs)) []
