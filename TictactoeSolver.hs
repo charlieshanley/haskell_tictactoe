@@ -63,11 +63,12 @@ score _            = 0
 unrose :: Rose a -> a
 unrose (Rose x _) = x
 
+showTree :: (Int -> a -> String) -> Rose a -> String
+showTree showFun r = show' 0 r
+    where show' i (Rose x xs) = intercalate("\n") $ showFun i x : map (show' (i+4)) xs
 
-
-showGameTree :: Rose GameState -> String
-showGameTree rg = show' 0 rg
-    where show' i (Rose g rs) = intercalate "\n" $ showGame i g : map (show' (i+2)) rs
+showInt :: Int -> Int -> String
+showInt indent = (replicate indent ' ' ++) . show
 
 showGame :: Int -> GameState -> String
 showGame i = unlines . map (indent . unwords) . (map . map) show . board
