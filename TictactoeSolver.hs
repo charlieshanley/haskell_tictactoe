@@ -52,7 +52,7 @@ maximin (Rose gs rs) = Rose (Assessment gs (review children)) children
 hastyMaximin :: Rose GameState -> Rose Assessment
 hastyMaximin (Rose gs []) = Rose (Assessment gs (scoreGS gs)) []
 hastyMaximin (Rose gs rs) = Rose (Assessment gs (review children)) children
-    where children = map maximin rs
+    where children = map hastyMaximin rs
           review = (0.5 *) . superlative . map (merit . unrose)
           superlative = if whoseTurn gs == O then maximum else minimum
 
@@ -86,8 +86,8 @@ showTree :: (Int -> a -> String) -> Rose a -> String
 showTree showFun r = show' 0 r
     where show' i (Rose x xs) = intercalate("\n") $ showFun i x : map (show' (i+4)) xs
 
-showInt :: Int -> Int -> String
-showInt indent = (replicate indent ' ' ++) . show
+showIndent :: (Show s) => Int -> s -> String
+showIndent indent = (replicate indent ' ' ++) . show
 
 showGame :: Int -> GameState -> String
 showGame i = unlines . map (indent . unwords) . (map . map) show . board
