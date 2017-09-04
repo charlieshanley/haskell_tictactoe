@@ -4,7 +4,8 @@ import Data.Maybe (fromJust)
 import Data.Char (isNumber)
 
 main :: IO ()
-main = undefined
+main = putStrLn intro >>
+       playAI newGame
 
 playAI :: GameState -> IO ()
 playAI gs =
@@ -23,14 +24,10 @@ aiTurn gs = flip unsafeMove gs . fromJust . decide hastyMaximin $ gs
 
 
 playerTurn ::  GameState -> IO GameState
--- playerTurn = undefined
-playerTurn gs0 = getChar >>= (\c ->
-    maybeInt c >>= flip move gs0 >>= \t ->
-        case t of
-            Just gs1 -> return gs1
-            Nothing -> tryAgain gs0
-    )
-
+playerTurn gs0 =
+    (putStrLn . showBoard . board) gs0  >>
+    getChar                      >>= \c ->
+    maybe (tryAgain gs0) return (maybeInt c >>= flip move gs0)
 
 tryAgain :: GameState -> IO GameState
 tryAgain gs = putStrLn "That is not a valid move. Pick again." >> playerTurn gs
@@ -49,5 +46,6 @@ showBoard :: Board -> String
 showBoard = unlines . map unwords . (map . map) show
 
 
-intro = "\nI am TicTacToe9000. Welcome to my Tic-tac-Temple. Let's play.\n" ++
-        "You go first. You're X; I'm O. Enter a number to mark a space.\n"
+intro =
+    "\nLet's play Tic-tac-toe.\nYou go first. You're X; I'm O.\n" ++
+    "Enter a number to mark a space.\n"
