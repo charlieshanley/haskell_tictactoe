@@ -2,7 +2,6 @@ import Tictactoe
 import TictactoeSolver
 import Data.Maybe (fromJust)
 import Data.Char (isNumber)
-import Control.Monad (when)
 
 main :: IO ()
 main = putStrLn intro >>
@@ -34,9 +33,8 @@ tryAgain c gs =
     playerTurn gs
 
 maybeInt :: String -> Maybe Int
-maybeInt (c:[])
-    | isNumber c = Just (read [c] :: Int)
-maybeInt _       = Nothing
+maybeInt (c:[]) | isNumber c = Just (read [c] :: Int)
+maybeInt _                   = Nothing
 
 announce :: Endgame -> String
 announce Draw  = "It's a draw!"

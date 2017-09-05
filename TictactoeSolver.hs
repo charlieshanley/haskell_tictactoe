@@ -91,7 +91,3 @@ showIndent indent = (replicate indent ' ' ++) . show
 showGame :: Int -> GameState -> String
 showGame i = unlines . map (indent . unwords . map show) . board
     where indent s = replicate i ' ' ++ s
-
-draw = return newGame >>= move 1 >>= move 5 >>= move 3 >>= move 2 >>= move 8
-iwin = return newGame >>= move 1 >>= move 7 >>= move 4 >>= move 9 >>= move 2
-youwin = return newGame >>= move 1 >>= move 4 >>= move 9 >>= move 8 >>= move 3
