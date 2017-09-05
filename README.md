@@ -1,9 +1,9 @@
 # haskell_tictactoe
 
 This project implements a command-line tic-tac-toe game. The user plays against the computer.
-Being that tic-tac-toe is a solved game (both players can guarantee a draw) and that the number
-of possible paths is relatively small, the computer plays perfectly --it is only possible for
-the player to draw or lose.
+Since the complete game tree is small enough to be computed, the computer plays perfectly.
+Because of this, and because tic-tac-toe is a solved game (both players can guarantee a draw),
+it is only possible for the player to draw or lose.
 
 
 ## How to run
@@ -27,5 +27,5 @@ guaranteed win in several moves.
 
 The modification made here is that scores are reduced toward zero each time they propagate from
 a child node to the parent. The effect is that the computer player prefers an early win to a later win,
-and contrariwise prefers a late loss to an earlier loss. Draws, which happen when no open spaces remain
-on the board, do not vary in when they occur.
+and contrariwise prefers a late loss to an earlier loss (or, it would if it could ever lose).
+Draws, which happen when no open spaces remain on the board, do not vary in when they occur.
